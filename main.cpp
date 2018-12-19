@@ -7,6 +7,7 @@
 #include <pthread.h>
 #include <functional>
 #include <ncurses.h>
+#include "asciisort.h"
 
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -16,7 +17,6 @@ void print(T* x, int y, WINDOW* localWin, int height, int width)
     int row=2, col=1;       //hold position of where to print
     for(int i=0; i<y; i++){
         mvwprintw(localWin, row, col, "%c ", x[i]);
-        //usleep(1000);
         wrefresh(localWin);
         col = col+2;
         if(col > width-2){
@@ -57,7 +57,7 @@ struct sortParams
     }
 };
 
-void* bubbleSort(WINDOW* win, void* data)
+void bubbleSort(WINDOW* win, void* data)
 {
     struct sortParams *myData;
     char* arr;
@@ -201,9 +201,16 @@ void destroy_win(WINDOW* local_win);
 
 int main()
 {
-    //std::cout.sync_with_stdio(true);
-
+    //std::cout.sync_with_stdio(true)
     //auto start = std::chrono::high_resolution_clock::now();
+    AsciiSort testAsciis;
+    testAsciis.generateRand();
+    //testAsciis.print();
+    AsciiSort testAscii2(152);
+    testAscii2.generateRand();
+    testAscii2.print(testAscii2.getAsciiChars());
+    testAscii2.runBubbleSort();
+    testAscii2.print(testAscii2.getBubChars());
 
     WINDOW *winRand, *winBub, *winSel, *winIns;       //Create ptrs for display windows
     pthread_t tBub, tSel, tIns;
