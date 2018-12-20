@@ -1,7 +1,7 @@
 #include "asciisort.h"
 #include <random>
 #include <iostream>
-#include <pthread.h>
+//#include <pthread.h>
 
 #define MIN 33;     //lower limit of Ascii char allowed
 #define MAX 126;    //Upper limit of Ascii char allowed
@@ -55,21 +55,29 @@ void AsciiSort::mSwap(char &x, char &y)
 void AsciiSort::runBubbleSort()
 {
     mCreateCopy(mBubChars);  //Create copy of chars
-    pthread_t tBub;
-    pthread_attr_t attr;
-    pthread_attr_init(&attr);
-    pthread_create(&tBub, &attr, mBubbleSort, this);
+//    pthread_t tBub;
+//    pthread_attr_t attr;
+//    pthread_attr_init(&attr);
+    pthread_create(&mtBub, NULL, mBubbleSort, this);
+}
+
+void AsciiSort::waitForBubSort() const
+{
+    (void) pthread_join(mtBub, NULL);
 }
 
 void* AsciiSort::mBubbleSort(void* This)
 {
-    for(int i=1; i<mSize; i++){
-        for(int j=1; j <= mSize-i; j++){
-            if(mBubChars[j-1] > mBubChars[j]){
-                mSwap(mBubChars[j-1], mBubChars[j]);
+    int size = ((AsciiSort*)This)->mSize;
+    char* list = ((AsciiSort*)This)->getBubChars();
+    for(int i=1; i<size; i++){
+        for(int j=1; j <= size-i; j++){
+            if(list[j-1] > list[j]){
+                ((AsciiSort*)This)->mSwap(list[j-1], list[j]);
             }
         }
     }
+    pthread_exit(NULL);
 }
 
 char* AsciiSort::getAsciiChars() const
@@ -101,6 +109,7 @@ double AsciiSort::getSelTime() const
 {
     return mSelTime;
 }
+
 double AsciiSort::getInsTime() const
 {
     return mInsTime;

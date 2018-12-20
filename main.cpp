@@ -203,6 +203,7 @@ int main()
 {
     //std::cout.sync_with_stdio(true)
     //auto start = std::chrono::high_resolution_clock::now();
+
     AsciiSort testAsciis;
     testAsciis.generateRand();
     //testAsciis.print();
@@ -210,6 +211,7 @@ int main()
     testAscii2.generateRand();
     testAscii2.print(testAscii2.getAsciiChars());
     testAscii2.runBubbleSort();
+    while(!testAscii2.waitForBubSort();
     testAscii2.print(testAscii2.getBubChars());
 
     WINDOW *winRand, *winBub, *winSel, *winIns;       //Create ptrs for display windows

@@ -1,6 +1,6 @@
 #ifndef ASCIISORT_H
 #define ASCIISORT_H
-
+#include "pthread.h"
 
 class AsciiSort
 {
@@ -13,6 +13,7 @@ public:
     void runSelectionSort();        //runs SelectionSort on its own thread
     void runInsertionSort();        //runs InsertionSort on its own thread
     void runSorts();                //runs all 3 sorting algorithms
+    void waitForBubSort() const;     //Wait for Bubble sort thread to finish
     char* getAsciiChars() const;    //ptr to asciiChars
     char* getBubChars() const;      //ptr to bubble chars
     char* getSelChars() const;      //ptr to Selection chars
@@ -34,9 +35,12 @@ protected:
     double mInsTime;                //Holds time for InsSort to run
     void mCreateCopy(char* asciiChars); //Create copy of AsciiChars
     void mSwap(char &x, char &y);   //Swaps the value of 2 chars
-    void* mBubbleSort(void* arg);             //Executes bubbleSort alg
     void mSelectionSort();          //Executes SelectionSort alg
     void mInsertionSort();          //Executes InsertionSort alg
+    pthread_t mtBub;
+
+private:
+    static void* mBubbleSort(void* arg);             //Executes bubbleSort alg
 };
 
 #endif // ASCIISORT_H
