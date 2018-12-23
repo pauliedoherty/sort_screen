@@ -210,9 +210,20 @@ int main()
     AsciiSort testAscii2(152);
     testAscii2.generateRand();
     testAscii2.print(testAscii2.getAsciiChars());
-    testAscii2.runBubbleSort();
-    while(!testAscii2.waitForBubSort();
+
+    testAscii2.runAllSorts();
+//    testAscii2.bubbleSort();
+//    testAscii2.selectionSort();
+//    testAscii2.insertionSort();
+
+    testAscii2.waitForBubSort();
+    testAscii2.waitForSelSort();
+    testAscii2.waitForInsSort();
+
     testAscii2.print(testAscii2.getBubChars());
+    testAscii2.print(testAscii2.getSelChars());
+    testAscii2.print(testAscii2.getInsChars());
+    testAscii2.print(testAscii2.getAsciiChars());
 
     WINDOW *winRand, *winBub, *winSel, *winIns;       //Create ptrs for display windows
     pthread_t tBub, tSel, tIns;

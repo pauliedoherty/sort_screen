@@ -1,7 +1,6 @@
 #include "asciisort.h"
 #include <random>
 #include <iostream>
-//#include <pthread.h>
 
 #define MIN 33;     //lower limit of Ascii char allowed
 #define MAX 126;    //Upper limit of Ascii char allowed
@@ -45,20 +44,27 @@ void AsciiSort::generateRand()
     }
 }
 
-void AsciiSort::mSwap(char &x, char &y)
+
+void AsciiSort::bubbleSort()
 {
-    char temp = x;
-    x = y;
-    y = temp;
+    mInitBubbleSort();
 }
 
-void AsciiSort::runBubbleSort()
+void AsciiSort::selectionSort()
 {
-    mCreateCopy(mBubChars);  //Create copy of chars
-//    pthread_t tBub;
-//    pthread_attr_t attr;
-//    pthread_attr_init(&attr);
-    pthread_create(&mtBub, NULL, mBubbleSort, this);
+    mInitSelectionSort();
+}
+
+void AsciiSort::insertionSort()
+{
+    mInitInsertionSort();
+}
+
+void AsciiSort::runAllSorts()
+{
+    mInitBubbleSort();
+    mInitSelectionSort();
+    mInitInsertionSort();
 }
 
 void AsciiSort::waitForBubSort() const
@@ -66,18 +72,14 @@ void AsciiSort::waitForBubSort() const
     (void) pthread_join(mtBub, NULL);
 }
 
-void* AsciiSort::mBubbleSort(void* This)
+void AsciiSort::waitForSelSort() const
 {
-    int size = ((AsciiSort*)This)->mSize;
-    char* list = ((AsciiSort*)This)->getBubChars();
-    for(int i=1; i<size; i++){
-        for(int j=1; j <= size-i; j++){
-            if(list[j-1] > list[j]){
-                ((AsciiSort*)This)->mSwap(list[j-1], list[j]);
-            }
-        }
-    }
-    pthread_exit(NULL);
+    pthread_join(mtSel, NULL);      //Compare (void) in other wait method
+}
+
+void AsciiSort::waitForInsSort() const
+{
+    pthread_join(mtIns, NULL);
 }
 
 char* AsciiSort::getAsciiChars() const
@@ -115,7 +117,7 @@ double AsciiSort::getInsTime() const
     return mInsTime;
 }
 
-int AsciiSort::getElements() const
+int AsciiSort::getNumElements() const
 {
     return mSize;
 }
@@ -128,9 +130,80 @@ void AsciiSort::print(char* asciiChars) const
     std::cout << std::endl;
 }
 
+/*Protected member functions*/
 void AsciiSort::mCreateCopy(char *asciiChars)
 {
     for(int i=0; i<mSize; i++){
         asciiChars[i] = mAsciiChars[i]; //Create copy
+    }
+}
+
+void AsciiSort::mSwap(char &x, char &y)
+{
+    char temp = x;
+    x = y;
+    y = temp;
+}
+
+void AsciiSort::mInitBubbleSort()
+{
+    mCreateCopy(mBubChars);  //Create copy of chars
+    pthread_create(&mtBub, NULL, mBubbleSort, this);
+}
+
+void AsciiSort::mInitSelectionSort()
+{
+    mCreateCopy(mSelChars);
+    pthread_create(&mtSel, NULL, mSelectionSort, this);
+}
+
+void AsciiSort::mInitInsertionSort()
+{
+    mCreateCopy(mInsChars);     //Populates mInsChars w/AsciiSort
+    pthread_create(&mtIns, NULL, mInsertionSort, this);
+}
+
+/*Private static member functions that get*
+ *executed within their own threads       */
+void* AsciiSort::mBubbleSort(void* This)
+{
+    int size = ((AsciiSort*)This)->mSize;
+    char* list = ((AsciiSort*)This)->getBubChars();
+    for(int i=1; i<size; i++){
+        for(int j=1; j <= size-i; j++){
+            if(list[j-1] > list[j]){
+                ((AsciiSort*)This)->mSwap(list[j-1], list[j]);
+            }
+        }
+    }
+    pthread_exit(NULL);
+}
+
+void* AsciiSort::mSelectionSort(void* This)
+{
+    int size = ((AsciiSort*)This)->mSize;
+    char* list = ((AsciiSort*)This)->getSelChars();
+    int min;
+    for(int i=0; i < size-1; i++){
+         min = i;
+         for(int j=i+1; j < size; j++){
+             if(list[j] < list[min]){
+                 min=j;
+             }
+         }
+         ((AsciiSort*)This)->mSwap(list[min], list[i]);
+    }
+}
+
+void* AsciiSort::mInsertionSort(void* This)
+{
+    int size = ((AsciiSort*)This)->mSize;
+    char* list = ((AsciiSort*)This)->mInsChars;
+    for(int i=1; i < size; i++){
+        char key = list[i];      //Key holds value to be inserted
+        for(int j = i; j > 0 && list[j-1] > key; j--){
+            list[j] = list[j-1];  //Sliding over
+            list[j-1] = key;
+         }
     }
 }
