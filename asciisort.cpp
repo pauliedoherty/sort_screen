@@ -15,6 +15,14 @@ AsciiSort::AsciiSort():
     mBubTime = 0.0;
     mSelTime = 0.0;
     mInsTime = 0.0;
+    mbubComplete = false;
+    mSelComplete = false;
+    swapCount = 0;
+    loopCount = 0;
+    mainFlag = false;
+    sortFlag = false;
+    totalThreads = 3;
+    activeThreads = 3;
 }
 
 AsciiSort::AsciiSort(int size):
@@ -24,6 +32,17 @@ AsciiSort::AsciiSort(int size):
     mBubChars = new char[size];
     mSelChars = new char[size];
     mInsChars = new char[size];
+    mBubTime = 0.0;
+    mSelTime = 0.0;
+    mInsTime = 0.0;
+    mbubComplete = false;
+    mSelComplete = false;
+    swapCount = 0;
+    loopCount = 0;
+    mainFlag = false;
+    sortFlag = false;
+    totalThreads = 2;
+    activeThreads = 2;
 }
 
 AsciiSort::~AsciiSort()
@@ -102,20 +121,31 @@ char* AsciiSort::getInsChars() const
     return mInsChars;
 }
 
-double AsciiSort::getBubTime() const
+bool AsciiSort::getBubStatus() const
 {
-    return mBubTime;
+    return mbubComplete;
 }
 
-double AsciiSort::getSelTime() const
+bool AsciiSort::getSelStatus() const
 {
-    return mSelTime;
+    return mSelComplete;
 }
 
-double AsciiSort::getInsTime() const
-{
-    return mInsTime;
-}
+
+//double AsciiSort::getBubTime() const
+//{
+//    return mBubTime;
+//}
+
+//double AsciiSort::getSelTime() const
+//{
+//    return mSelTime;
+//}
+
+//double AsciiSort::getInsTime() const
+//{
+//    return mInsTime;
+//}
 
 int AsciiSort::getNumElements() const
 {
@@ -169,13 +199,40 @@ void* AsciiSort::mBubbleSort(void* This)
 {
     int size = ((AsciiSort*)This)->mSize;
     char* list = ((AsciiSort*)This)->getBubChars();
+
     for(int i=1; i<size; i++){
+        ((AsciiSort*)This)->loopCount++;
         for(int j=1; j <= size-i; j++){
+
             if(list[j-1] > list[j]){
-                ((AsciiSort*)This)->mSwap(list[j-1], list[j]);
+
+                pthread_mutex_lock(&((AsciiSort*)This)->sortMutex);  //lock Thread mutex so list can be safely accessed
+                    pthread_mutex_lock(&((AsciiSort*)This)->mainMutex); //locks main Mutex
+
+                    ((AsciiSort*)This)->mSwap(list[j-1], list[j]);
+                    ((AsciiSort*)This)->swapCount++;
+
+                    ((AsciiSort*)This)->activeThreads--;
+                    if(((AsciiSort*)This)->activeThreads==0){
+                        ((AsciiSort*)This)->mainFlag = true;
+                        pthread_cond_signal(&((AsciiSort*)This)->mainCond);
+                    }
+
+                    pthread_mutex_unlock(&((AsciiSort*)This)->mainMutex);
+
+                if(!((AsciiSort*)This)->sortFlag){
+                    pthread_cond_wait(&((AsciiSort*)This)->sortCond, &((AsciiSort*)This)->sortMutex);
+                    ((AsciiSort*)This)->sortFlag = false;
+                }
+                pthread_mutex_unlock(&((AsciiSort*)This)->sortMutex);
             }
         }
     }
+    pthread_mutex_lock(&((AsciiSort*)This)->mainMutex);
+        ((AsciiSort*)This)->totalThreads--;
+        ((AsciiSort*)This)->mainFlag = true;
+    pthread_cond_signal(&((AsciiSort*)This)->mainCond);
+    pthread_mutex_unlock(&((AsciiSort*)This)->mainMutex);
     pthread_exit(NULL);
 }
 
@@ -187,12 +244,35 @@ void* AsciiSort::mSelectionSort(void* This)
     for(int i=0; i < size-1; i++){
          min = i;
          for(int j=i+1; j < size; j++){
-             if(list[j] < list[min]){
-                 min=j;
+             if(list[j] < list[min]){                 
+                min=j;
              }
          }
-         ((AsciiSort*)This)->mSwap(list[min], list[i]);
+         pthread_mutex_lock(&((AsciiSort*)This)->sortMutex);  //lock Thread mutex so list can be safely accessed
+             pthread_mutex_lock(&((AsciiSort*)This)->mainMutex); //locks main Mutex
+
+             ((AsciiSort*)This)->mSwap(list[min], list[i]);
+
+             ((AsciiSort*)This)->activeThreads--;
+             if(((AsciiSort*)This)->activeThreads==0){
+                 ((AsciiSort*)This)->mainFlag = true;
+                 pthread_cond_signal(&((AsciiSort*)This)->mainCond);
+             }
+
+             pthread_mutex_unlock(&((AsciiSort*)This)->mainMutex);
+
+         if(!((AsciiSort*)This)->sortFlag){
+             pthread_cond_wait(&((AsciiSort*)This)->sortCond, &((AsciiSort*)This)->sortMutex);
+             ((AsciiSort*)This)->sortFlag = false;
+         }
+         pthread_mutex_unlock(&((AsciiSort*)This)->sortMutex);
     }
+    pthread_mutex_lock(&((AsciiSort*)This)->mainMutex);
+        ((AsciiSort*)This)->totalThreads--;
+        ((AsciiSort*)This)->mainFlag = true;
+    pthread_cond_signal(&((AsciiSort*)This)->mainCond);
+    pthread_mutex_unlock(&((AsciiSort*)This)->mainMutex);
+    pthread_exit(NULL);
 }
 
 void* AsciiSort::mInsertionSort(void* This)
@@ -202,8 +282,30 @@ void* AsciiSort::mInsertionSort(void* This)
     for(int i=1; i < size; i++){
         char key = list[i];      //Key holds value to be inserted
         for(int j = i; j > 0 && list[j-1] > key; j--){
-            list[j] = list[j-1];  //Sliding over
-            list[j-1] = key;
+            pthread_mutex_lock(&((AsciiSort*)This)->sortMutex);
+                pthread_mutex_lock(&((AsciiSort*)This)->mainMutex);
+
+                list[j] = list[j-1];  //Sliding over
+                list[j-1] = key;
+
+                ((AsciiSort*)This)->activeThreads--;
+                if(((AsciiSort*)This)->activeThreads == 0){
+                    ((AsciiSort*)This)->mainFlag = true;
+                    pthread_cond_signal(&((AsciiSort*)This)->mainCond);
+                }
+                pthread_mutex_unlock(&((AsciiSort*)This)->mainMutex);
+
+                if(!((AsciiSort*)This)->sortFlag){
+                    pthread_cond_wait(&((AsciiSort*)This)->sortCond, &((AsciiSort*)This)->sortMutex);
+                    ((AsciiSort*)This)->sortFlag = false;
+                }
+                pthread_mutex_unlock(&((AsciiSort*)This)->sortMutex);
+
          }
     }
+    pthread_mutex_lock(&((AsciiSort*)This)->mainMutex);
+        ((AsciiSort*)This)->totalThreads--;
+        ((AsciiSort*)This)->mainFlag = true;
+    pthread_cond_signal(&((AsciiSort*)This)->mainCond);
+    pthread_mutex_unlock(&((AsciiSort*)This)->mainMutex);
 }

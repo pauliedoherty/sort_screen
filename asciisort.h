@@ -21,11 +21,25 @@ public:
     char* getBubChars() const;      //ptr to bubble chars
     char* getSelChars() const;      //ptr to Selection chars
     char* getInsChars() const;      //ptr to INsertion chars
-    double getBubTime() const;      //Return time taken to Bubble Sort
-    double getSelTime() const;      //Return time taken to Selection Sort
-    double getInsTime() const;      //Return time taken to Insertion Sort
+    bool getBubStatus() const;      //returns true if bubSort has been executed on object
+    bool getSelStatus() const;      //returns treu if SelSort has been executed on object
+//    bool getSelStatus() const;      //returns true if selSort has been executed on object
+//    bool getInsStatus() const;      //returns true if insSort has been executed on object
+//    double getBubTime() const;      //Return time taken to Bubble Sort
+//    double getSelTime() const;      //Return time taken to Selection Sort
+//    double getInsTime() const;      //Return time taken to Insertion Sort
     int getNumElements() const;        //Return number of Ascii Chars generated
     void print(char* asciiChars) const;             //Test method
+    pthread_mutex_t sortMutex;       //Mutex to handle bubble sort
+    pthread_cond_t sortCond;         //Conditional variable bubble
+    pthread_mutex_t mainMutex;       //Mutex to handle bubble sort
+    pthread_cond_t mainCond;         //Conditional variable bubble
+    int swapCount;
+    int loopCount;
+    bool mainFlag;
+    bool sortFlag;
+    int activeThreads;
+    int totalThreads;
 
 protected:
     int mSize;                      //Number of chars in ascii array
@@ -36,6 +50,8 @@ protected:
     double mBubTime;                //Holds time for BubSort to run
     double mSelTime;                //Holds time for SelSort to run
     double mInsTime;                //Holds time for InsSort to run
+    bool mbubComplete;              //Tells us if bubSort has finished
+    bool mSelComplete;               //Tells us if selection Sort has finished
     void mCreateCopy(char* asciiChars); //Create copy of AsciiChars
     void mSwap(char &x, char &y);   //Swaps the value of 2 chars
     void mInitBubbleSort();          //runs BubbleSort on its own thread

@@ -5,11 +5,13 @@ CONFIG -= qt
 
 SOURCES += \
         main.cpp \
-    asciisort.cpp
+    asciisort.cpp \
+    display.cpp
 
 QMAKE_CXXFLAGS += -std=c++0x -pthread
 LIBS += -pthread
 LIBS += -lncurses
 
 HEADERS += \
-    asciisort.h
+    asciisort.h \
+    display.h
