@@ -10,17 +10,17 @@
 #include "asciisort.h"
 #include "display.h"
 
+#define SORT_SIZE 152
 
 int main()
 {
-    int printCount = 0;
-    //std::cout.sync_with_stdio(true)
-    //auto start = std::chrono::high_resolution_clock::now();
 
-
-    initscr();                                        //Start curses mode
-    cbreak();                                         //turn off line buffering
-    int startx, starty, width, height;                //Hold Window parameters
+    initscr();                     //Start curses mode
+    cbreak();                      //turn off line buffering
+    keypad(stdscr, TRUE);          //Turn on keypad mode
+    noecho();                      //turn off line buffering
+    int ch;                        //hold user input
+    int startx, starty, width, height;    //Hold Window parameters
     height = LINES/2;         //LINES is number of console rows after initscr() is called
     width = COLS/2;           //COLS is number of console characters in a line
     starty = 0;               //Define where to position window
@@ -31,38 +31,57 @@ int main()
     Display selWin(height, width, starty+height, startx, "Selection Sort");
     Display insWin(height, width, starty+height, startx+width, "Insertion Sort");
 
-    AsciiSort sortMe(152);
-    sortMe.generateRand();
-    randWin.print(sortMe.getAsciiChars(), sortMe.getNumElements(), height, width);
-    pthread_mutex_init(&sortMe.sortMutex, NULL);
-    pthread_cond_init(&sortMe.sortCond, NULL);
+    AsciiSort sortMe(SORT_SIZE);
 
-    pthread_mutex_lock(&sortMe.mainMutex);
-    sortMe.activeThreads = 3;
-    sortMe.bubbleSort();
-    sortMe.selectionSort();
-    sortMe.insertionSort();
+//    pthread_mutex_init(&sortMe.mainMutex, NULL);
+//    pthread_cond_init(&sortMe.mainCond, NULL);
 
-    while(sortMe.totalThreads > 0){
+//    pthread_mutex_init(&sortMe.sortMutex, NULL);
+//    pthread_cond_init(&sortMe.sortCond, NULL);
 
-        if(!sortMe.mainFlag){
-            pthread_cond_wait(&sortMe.mainCond, &sortMe.mainMutex);
-            sortMe.mainFlag = false;
+    while(1){
+
+        sortMe.generateRand();
+        randWin.print(sortMe.getAsciiChars(), sortMe.getNumElements(), height, width);
+        randWin.printRandFooter(height-2, SORT_SIZE);
+        pthread_mutex_lock(&sortMe.mainMutex);
+        sortMe.runAllSorts();
+
+        while(sortMe.totalThreads > 0){
+
+            if(!sortMe.mainFlag){
+                pthread_cond_wait(&sortMe.mainCond, &sortMe.mainMutex);
+                sortMe.mainFlag = false;
+            }
+            pthread_mutex_unlock(&sortMe.mainMutex);
+
+            bubWin.print(sortMe.getBubChars(), sortMe.getNumElements(), height, width);
+            bubWin.printSortFooter(height-2, sortMe.getBubSwapCount());
+            selWin.print(sortMe.getSelChars(), sortMe.getNumElements(), height, width);
+            selWin.printSortFooter(height-2, sortMe.getSelSwapCount());
+            insWin.print(sortMe.getInsChars(), sortMe.getNumElements(), height, width);
+            insWin.printSortFooter(height-2, sortMe.getInsSwapCount());
+
+            //pthread_mutex_unlock(&sortMe.mainMutex);
+            std::this_thread::sleep_for(std::chrono::milliseconds(3));
+            pthread_mutex_lock(&sortMe.sortMutex);
+            sortMe.activeThreads = sortMe.totalThreads;
+            sortMe.sortFlag = true;
+            pthread_cond_broadcast(&sortMe.sortCond);
+            pthread_mutex_unlock(&sortMe.sortMutex);
+
         }
-        pthread_mutex_unlock(&sortMe.mainMutex);
 
-        bubWin.print(sortMe.getBubChars(), sortMe.getNumElements(), height, width);
-        selWin.print(sortMe.getSelChars(), sortMe.getNumElements(), height, width);
-        insWin.print(sortMe.getInsChars(), sortMe.getNumElements(), height, width);
-        printCount++;
+        randWin.clearDisp(height, width);
+        bubWin.clearDisp(height, width);
+        selWin.clearDisp(height, width);
+        insWin.clearDisp(height, width);
 
-        pthread_mutex_unlock(&sortMe.mainMutex);
-        std::this_thread::sleep_for(std::chrono::milliseconds(3));
-        pthread_mutex_lock(&sortMe.sortMutex);
-        sortMe.activeThreads = sortMe.totalThreads;
-        sortMe.sortFlag = true;
-        pthread_cond_broadcast(&sortMe.sortCond);
-        pthread_mutex_unlock(&sortMe.sortMutex);
+        sortMe.activeThreads = 3;
+        sortMe.totalThreads = 3;
+        sortMe.setBubSwapCount(0);
+        sortMe.setSelSwapCount(0);
+        sortMe.setInsSwapCount(0);
 
     }
 
@@ -70,11 +89,13 @@ int main()
     sortMe.waitForSelSort();
     sortMe.waitForInsSort();
 
-    int ch;                                           //hold user input                                 //turn off line buffering
+    pthread_mutex_destroy(&sortMe.sortMutex);
+    pthread_cond_destroy(&sortMe.sortCond);
 
-    keypad(stdscr, TRUE);                             //Turn on keypad mode
-    
-    noecho();
+    pthread_mutex_destroy(&sortMe.mainMutex);
+    pthread_cond_destroy(&sortMe.mainCond);
+
+
 
     std::cin.get();
     return 0;

@@ -2,8 +2,6 @@
 #include <random>
 #include <iostream>
 
-#define MIN 33;     //lower limit of Ascii char allowed
-#define MAX 126;    //Upper limit of Ascii char allowed
 
 AsciiSort::AsciiSort():
     mSize(10)
@@ -12,17 +10,19 @@ AsciiSort::AsciiSort():
     mBubChars = new char[mSize];
     mSelChars = new char[mSize];
     mInsChars = new char[mSize];
-    mBubTime = 0.0;
-    mSelTime = 0.0;
-    mInsTime = 0.0;
+    mBubSwapCount = 0;
+    mSelSwapCount = 0;
+    mInsSwapCount = 0;
     mbubComplete = false;
     mSelComplete = false;
-    swapCount = 0;
-    loopCount = 0;
     mainFlag = false;
     sortFlag = false;
     totalThreads = 3;
     activeThreads = 3;
+    mainMutex = PTHREAD_MUTEX_INITIALIZER;
+    sortMutex = PTHREAD_MUTEX_INITIALIZER;
+    mainCond = PTHREAD_COND_INITIALIZER;
+    sortCond = PTHREAD_COND_INITIALIZER;
 }
 
 AsciiSort::AsciiSort(int size):
@@ -32,17 +32,15 @@ AsciiSort::AsciiSort(int size):
     mBubChars = new char[size];
     mSelChars = new char[size];
     mInsChars = new char[size];
-    mBubTime = 0.0;
-    mSelTime = 0.0;
-    mInsTime = 0.0;
+    mBubSwapCount = 0;
+    mSelSwapCount = 0;
+    mInsSwapCount = 0;
     mbubComplete = false;
     mSelComplete = false;
-    swapCount = 0;
-    loopCount = 0;
     mainFlag = false;
     sortFlag = false;
-    totalThreads = 2;
-    activeThreads = 2;
+    totalThreads = 3;   //These values will need to be assigned elsewhere
+    activeThreads = 3;      //Make them private
 }
 
 AsciiSort::~AsciiSort()
@@ -66,21 +64,25 @@ void AsciiSort::generateRand()
 
 void AsciiSort::bubbleSort()
 {
+    mCreateCopy(mBubChars);  //Create copy of chars
     mInitBubbleSort();
 }
 
 void AsciiSort::selectionSort()
 {
+    mCreateCopy(mSelChars);  //Create copy of chars
     mInitSelectionSort();
 }
 
 void AsciiSort::insertionSort()
 {
+    mCreateCopy(mInsChars);  //Create copy of chars
     mInitInsertionSort();
 }
 
 void AsciiSort::runAllSorts()
 {
+    mInitCopy();
     mInitBubbleSort();
     mInitSelectionSort();
     mInitInsertionSort();
@@ -88,17 +90,17 @@ void AsciiSort::runAllSorts()
 
 void AsciiSort::waitForBubSort() const
 {
-    (void) pthread_join(mtBub, NULL);
+   (void) pthread_join(mtBub, NULL);
 }
 
 void AsciiSort::waitForSelSort() const
 {
-    pthread_join(mtSel, NULL);      //Compare (void) in other wait method
+   (void) pthread_join(mtSel, NULL);      //Compare (void) in other wait method
 }
 
 void AsciiSort::waitForInsSort() const
 {
-    pthread_join(mtIns, NULL);
+   (void) pthread_join(mtIns, NULL);
 }
 
 char* AsciiSort::getAsciiChars() const
@@ -121,32 +123,36 @@ char* AsciiSort::getInsChars() const
     return mInsChars;
 }
 
-bool AsciiSort::getBubStatus() const
+
+int AsciiSort::getBubSwapCount() const
 {
-    return mbubComplete;
+    return mBubSwapCount;
 }
 
-bool AsciiSort::getSelStatus() const
+int AsciiSort::getSelSwapCount() const
 {
-    return mSelComplete;
+    return mSelSwapCount;
 }
 
+int AsciiSort::getInsSwapCount() const
+{
+    return mInsSwapCount;
+}
 
-//double AsciiSort::getBubTime() const
-//{
-//    return mBubTime;
-//}
+void AsciiSort::setBubSwapCount(int count)
+{
+    mBubSwapCount = count;
+}
 
-//double AsciiSort::getSelTime() const
-//{
-//    return mSelTime;
-//}
+void AsciiSort::setSelSwapCount(int count)
+{
+    mSelSwapCount = count;
+}
 
-//double AsciiSort::getInsTime() const
-//{
-//    return mInsTime;
-//}
-
+void AsciiSort::setInsSwapCount(int count)
+{
+    mInsSwapCount = count;
+}
 int AsciiSort::getNumElements() const
 {
     return mSize;
@@ -175,21 +181,25 @@ void AsciiSort::mSwap(char &x, char &y)
     y = temp;
 }
 
-void AsciiSort::mInitBubbleSort()
+void AsciiSort::mInitCopy()
 {
     mCreateCopy(mBubChars);  //Create copy of chars
+    mCreateCopy(mSelChars);
+    mCreateCopy(mInsChars);     //Populates mInsChars w/AsciiSort
+}
+
+void AsciiSort::mInitBubbleSort()
+{
     pthread_create(&mtBub, NULL, mBubbleSort, this);
 }
 
 void AsciiSort::mInitSelectionSort()
 {
-    mCreateCopy(mSelChars);
     pthread_create(&mtSel, NULL, mSelectionSort, this);
 }
 
 void AsciiSort::mInitInsertionSort()
 {
-    mCreateCopy(mInsChars);     //Populates mInsChars w/AsciiSort
     pthread_create(&mtIns, NULL, mInsertionSort, this);
 }
 
@@ -201,7 +211,6 @@ void* AsciiSort::mBubbleSort(void* This)
     char* list = ((AsciiSort*)This)->getBubChars();
 
     for(int i=1; i<size; i++){
-        ((AsciiSort*)This)->loopCount++;
         for(int j=1; j <= size-i; j++){
 
             if(list[j-1] > list[j]){
@@ -210,9 +219,9 @@ void* AsciiSort::mBubbleSort(void* This)
                     pthread_mutex_lock(&((AsciiSort*)This)->mainMutex); //locks main Mutex
 
                     ((AsciiSort*)This)->mSwap(list[j-1], list[j]);
-                    ((AsciiSort*)This)->swapCount++;
-
+                    ((AsciiSort*)This)->mBubSwapCount++;
                     ((AsciiSort*)This)->activeThreads--;
+
                     if(((AsciiSort*)This)->activeThreads==0){
                         ((AsciiSort*)This)->mainFlag = true;
                         pthread_cond_signal(&((AsciiSort*)This)->mainCond);
@@ -230,8 +239,10 @@ void* AsciiSort::mBubbleSort(void* This)
     }
     pthread_mutex_lock(&((AsciiSort*)This)->mainMutex);
         ((AsciiSort*)This)->totalThreads--;
+    //if(((AsciiSort*)This)->totalThreads==0){
         ((AsciiSort*)This)->mainFlag = true;
-    pthread_cond_signal(&((AsciiSort*)This)->mainCond);
+        pthread_cond_signal(&((AsciiSort*)This)->mainCond);
+    //}
     pthread_mutex_unlock(&((AsciiSort*)This)->mainMutex);
     pthread_exit(NULL);
 }
@@ -252,8 +263,9 @@ void* AsciiSort::mSelectionSort(void* This)
              pthread_mutex_lock(&((AsciiSort*)This)->mainMutex); //locks main Mutex
 
              ((AsciiSort*)This)->mSwap(list[min], list[i]);
-
              ((AsciiSort*)This)->activeThreads--;
+             ((AsciiSort*)This)->mSelSwapCount++;
+
              if(((AsciiSort*)This)->activeThreads==0){
                  ((AsciiSort*)This)->mainFlag = true;
                  pthread_cond_signal(&((AsciiSort*)This)->mainCond);
@@ -267,10 +279,13 @@ void* AsciiSort::mSelectionSort(void* This)
          }
          pthread_mutex_unlock(&((AsciiSort*)This)->sortMutex);
     }
+
     pthread_mutex_lock(&((AsciiSort*)This)->mainMutex);
         ((AsciiSort*)This)->totalThreads--;
-        ((AsciiSort*)This)->mainFlag = true;
-    pthread_cond_signal(&((AsciiSort*)This)->mainCond);
+        //if(((AsciiSort*)This)->totalThreads==0){
+            ((AsciiSort*)This)->mainFlag = true;
+            pthread_cond_signal(&((AsciiSort*)This)->mainCond);
+        //}
     pthread_mutex_unlock(&((AsciiSort*)This)->mainMutex);
     pthread_exit(NULL);
 }
@@ -287,8 +302,9 @@ void* AsciiSort::mInsertionSort(void* This)
 
                 list[j] = list[j-1];  //Sliding over
                 list[j-1] = key;
-
+                ((AsciiSort*)This)->mInsSwapCount++;
                 ((AsciiSort*)This)->activeThreads--;
+
                 if(((AsciiSort*)This)->activeThreads == 0){
                     ((AsciiSort*)This)->mainFlag = true;
                     pthread_cond_signal(&((AsciiSort*)This)->mainCond);
@@ -305,7 +321,10 @@ void* AsciiSort::mInsertionSort(void* This)
     }
     pthread_mutex_lock(&((AsciiSort*)This)->mainMutex);
         ((AsciiSort*)This)->totalThreads--;
+    //if(((AsciiSort*)This)->totalThreads==0){
         ((AsciiSort*)This)->mainFlag = true;
-    pthread_cond_signal(&((AsciiSort*)This)->mainCond);
+        pthread_cond_signal(&((AsciiSort*)This)->mainCond);
+    //}
     pthread_mutex_unlock(&((AsciiSort*)This)->mainMutex);
+    pthread_exit(NULL);
 }

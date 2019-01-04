@@ -33,12 +33,14 @@ WINDOW* Display::createNewWin(int height, int width,
         mvwprintw(local_win, 0, i, "-");
         mvwprintw(local_win, height-1, i, "-");
         wrefresh(local_win);
+        std::this_thread::sleep_for(std::chrono::milliseconds(3));
     }
 
     for(int i=1; i < height-1; i++){
         mvwprintw(local_win, i, 0, "|");
         mvwprintw(local_win, i, width-1, "|");
         wrefresh(local_win);
+        std::this_thread::sleep_for(std::chrono::milliseconds(3));
     }
 
     wrefresh(local_win);		/* Show that box 		*/
@@ -50,10 +52,11 @@ void Display::clearDisp(int height, int width)
     for(int i=1; i < height-1; i++){
         for(int j=1; j < width-1; j++){
             mvwprintw(mDisplayWin, i, j, " ");
-            //wrefresh(mDisplayWin);
+            wrefresh(mDisplayWin);
+            std::this_thread::sleep_for(std::chrono::milliseconds(3));
         }
     }
-    wrefresh(mDisplayWin);
+
 }
 
 void Display::print(char* data, int size, int height, int width) const
@@ -71,6 +74,19 @@ void Display::print(char* data, int size, int height, int width) const
     }
     wrefresh(mDisplayWin);
 }
+
+void Display::printRandFooter(int line, int elements) const
+{
+    mvwprintw(mDisplayWin, line, 1, "Number of Chars: %d", elements);
+    wrefresh(mDisplayWin);
+}
+
+void Display::printSortFooter(int line, int swapCount) const
+{
+    mvwprintw(mDisplayWin, line, 1, "Total Swaps: %d", swapCount);
+    wrefresh(mDisplayWin);
+}
+
 
 void Display::destroyWin(WINDOW *local_win, int height, int width)
 {

@@ -1,8 +1,8 @@
 #ifndef DISPLAY_H
 #define DISPLAY_H
-#include "asciisort.h"
 #include <ncurses.h>
 #include <string>
+#include <thread>
 
 class Display
 {
@@ -13,8 +13,8 @@ public:
     ~Display();                             //Default Destructor for window
     void clearDisp(int height, int width);
     void print(char* data, int size, int height, int width) const;  //Print to window
-    void printColor(WINDOW *localWin, AsciiSort &data,    //Prints to window with special chars coloured
-                            int char1, int char2) const;
+    void printRandFooter(int line, int elements) const;
+    void printSortFooter(int line, int swapCount) const;
 protected:
     WINDOW *mDisplayWin;                    //holds display window for object
     WINDOW *createNewWin(int height,       //Creates new window
