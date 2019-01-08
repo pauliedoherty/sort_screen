@@ -270,10 +270,8 @@ void* AsciiSort::mBubbleSort(void* This)
     }
     pthread_mutex_lock(&((AsciiSort*)This)->mainMutex);
         ((AsciiSort*)This)->totalThreads--;
-    //if(((AsciiSort*)This)->totalThreads==0){
         ((AsciiSort*)This)->mainFlag = true;
         pthread_cond_signal(&((AsciiSort*)This)->mainCond);
-    //}
     pthread_mutex_unlock(&((AsciiSort*)This)->mainMutex);
 
     pthread_mutex_lock(&((AsciiSort*)This)->contMutex);
@@ -325,12 +323,9 @@ void* AsciiSort::mSelectionSort(void* This)
 
     pthread_mutex_lock(&((AsciiSort*)This)->mainMutex);
         ((AsciiSort*)This)->totalThreads--;
-        //if(((AsciiSort*)This)->totalThreads==0){
             ((AsciiSort*)This)->mainFlag = true;
             pthread_cond_signal(&((AsciiSort*)This)->mainCond);
-        //}
     pthread_mutex_unlock(&((AsciiSort*)This)->mainMutex);
-    //pthread_exit(NULL);
 
     pthread_mutex_lock(&((AsciiSort*)This)->contMutex);
 
@@ -375,12 +370,9 @@ void* AsciiSort::mInsertionSort(void* This)
     }
     pthread_mutex_lock(&((AsciiSort*)This)->mainMutex);
         ((AsciiSort*)This)->totalThreads--;
-    //if(((AsciiSort*)This)->totalThreads==0){
         ((AsciiSort*)This)->mainFlag = true;
         pthread_cond_signal(&((AsciiSort*)This)->mainCond);
-    //}
     pthread_mutex_unlock(&((AsciiSort*)This)->mainMutex);
-    //pthread_exit(NULL);
 
     pthread_mutex_lock(&((AsciiSort*)This)->contMutex);
 

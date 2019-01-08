@@ -56,7 +56,17 @@ void Display::clearDisp(int height, int width)
             std::this_thread::sleep_for(std::chrono::milliseconds(3));
         }
     }
+}
 
+void Display::clearData(int height, int width)
+{
+    for(int i=2; i < height-1; i++){
+        for(int j=1; j < width-1; j++){
+            mvwprintw(mDisplayWin, i, j, " ");
+            wrefresh(mDisplayWin);
+            std::this_thread::sleep_for(std::chrono::milliseconds(3));
+        }
+    }
 }
 
 void Display::print(char* data, int size, int height, int width) const
@@ -74,6 +84,31 @@ void Display::print(char* data, int size, int height, int width) const
     }
     wrefresh(mDisplayWin);
 }
+
+void Display::printInit(char *data, int size, int height, int width) const
+{
+    {
+        int row=2, col=1;       //hold position of where to print
+        for(int i=0; i<size; i++){
+            std::this_thread::sleep_for(std::chrono::milliseconds(3));
+            mvwprintw(mDisplayWin, row, col, "%c ", data[i]);
+            wrefresh(mDisplayWin);
+            col = col+2;
+            if(col > width-2){
+                col = 1;
+                row++;
+            }if(row > height-3){    //Leave bottom row blank for time taken
+                row = 3;
+            }
+        }
+    }
+}
+
+//void Display::printTitle(int height, int width, std::string title) const
+//{
+//    title
+//    mvwprintw(mDisplayWin, 1, (width/2) - (title.length()/2), title.c_str());
+//}
 
 void Display::printRandFooter(int line, int elements) const
 {

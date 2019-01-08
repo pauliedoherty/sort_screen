@@ -33,21 +33,21 @@ int main()
 
     AsciiSort sortMe(SORT_SIZE);
 
-//    pthread_mutex_init(&sortMe.mainMutex, NULL);
-//    pthread_cond_init(&sortMe.mainCond, NULL);
-
-//    pthread_mutex_init(&sortMe.sortMutex, NULL);
-//    pthread_cond_init(&sortMe.sortCond, NULL);
 
     sortMe.generateRand();
-    randWin.print(sortMe.getAsciiChars(), sortMe.getNumElements(), height, width);
+    randWin.printInit(sortMe.getAsciiChars(), sortMe.getNumElements(), height, width);
     randWin.printRandFooter(height-2, SORT_SIZE);
+    bubWin.printInit(sortMe.getBubChars(), sortMe.getNumElements(), height, width);
+    bubWin.printSortFooter(height-2, sortMe.getBubSwapCount());
+    selWin.printInit(sortMe.getSelChars(), sortMe.getNumElements(), height, width);
+    selWin.printSortFooter(height-2, sortMe.getSelSwapCount());
+    insWin.printInit(sortMe.getInsChars(), sortMe.getNumElements(), height, width);
+    insWin.printSortFooter(height-2, sortMe.getInsSwapCount());
     pthread_mutex_lock(&sortMe.mainMutex);
     sortMe.runAllSorts();
 
+    //TODO: This while loop needs to be check condition of contFlag
     while(1){
-
-
 
         while(sortMe.totalThreads > 0){
 
@@ -64,7 +64,6 @@ int main()
             insWin.print(sortMe.getInsChars(), sortMe.getNumElements(), height, width);
             insWin.printSortFooter(height-2, sortMe.getInsSwapCount());
 
-            //pthread_mutex_unlock(&sortMe.mainMutex);
             std::this_thread::sleep_for(std::chrono::milliseconds(3));
             pthread_mutex_lock(&sortMe.sortMutex);
             sortMe.activeThreads = sortMe.totalThreads;
@@ -74,12 +73,11 @@ int main()
 
         }
 
-        randWin.clearDisp(height, width);
-        bubWin.clearDisp(height, width);
-        selWin.clearDisp(height, width);
-        insWin.clearDisp(height, width);
+        randWin.clearData(height, width);
+        bubWin.clearData(height, width);
+        selWin.clearData(height, width);
+        insWin.clearData(height, width);
 
-        //TODO - implement way of resetting search chars
         if(!sortMe.contFlag) break;
 
         sortMe.activeThreads = 3;
@@ -91,23 +89,19 @@ int main()
         sortMe.sortFlag = false;
 
         sortMe.generateRand();
-        randWin.print(sortMe.getAsciiChars(), sortMe.getNumElements(), height, width);
+        randWin.printInit(sortMe.getAsciiChars(), sortMe.getNumElements(), height, width);
         randWin.printRandFooter(height-2, SORT_SIZE);
+        bubWin.printInit(sortMe.getBubChars(), sortMe.getNumElements(), height, width);
+        bubWin.printSortFooter(height-2, sortMe.getBubSwapCount());
+        selWin.printInit(sortMe.getSelChars(), sortMe.getNumElements(), height, width);
+        selWin.printSortFooter(height-2, sortMe.getSelSwapCount());
+        insWin.printInit(sortMe.getInsChars(), sortMe.getNumElements(), height, width);
+        insWin.printSortFooter(height-2, sortMe.getInsSwapCount());
         pthread_mutex_lock(&sortMe.mainMutex);
 
         pthread_mutex_lock(&sortMe.contMutex);
         pthread_cond_broadcast(&sortMe.contCond);
         pthread_mutex_unlock(&sortMe.contMutex);
-
-        //TODO - implement way of broadcasting signal to cont condVar
-
-        //if(FLAG){
-        //Mutex for continuing
-        //Conditional Variable for continuing
-        //Flag for continuing
-        //}
-
-
 
     }
 
@@ -121,6 +115,8 @@ int main()
     pthread_mutex_destroy(&sortMe.mainMutex);
     pthread_cond_destroy(&sortMe.mainCond);
 
+    pthread_mutex_destroy(&sortMe.contMutex);
+    pthread_cond_destroy(&sortMe.contCond);
 
 
     std::cin.get();
