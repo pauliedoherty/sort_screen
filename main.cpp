@@ -39,13 +39,15 @@ int main()
 //    pthread_mutex_init(&sortMe.sortMutex, NULL);
 //    pthread_cond_init(&sortMe.sortCond, NULL);
 
+    sortMe.generateRand();
+    randWin.print(sortMe.getAsciiChars(), sortMe.getNumElements(), height, width);
+    randWin.printRandFooter(height-2, SORT_SIZE);
+    pthread_mutex_lock(&sortMe.mainMutex);
+    sortMe.runAllSorts();
+
     while(1){
 
-        sortMe.generateRand();
-        randWin.print(sortMe.getAsciiChars(), sortMe.getNumElements(), height, width);
-        randWin.printRandFooter(height-2, SORT_SIZE);
-        pthread_mutex_lock(&sortMe.mainMutex);
-        sortMe.runAllSorts();
+
 
         while(sortMe.totalThreads > 0){
 
@@ -77,11 +79,35 @@ int main()
         selWin.clearDisp(height, width);
         insWin.clearDisp(height, width);
 
+        //TODO - implement way of resetting search chars
+        if(!sortMe.contFlag) break;
+
         sortMe.activeThreads = 3;
         sortMe.totalThreads = 3;
         sortMe.setBubSwapCount(0);
         sortMe.setSelSwapCount(0);
         sortMe.setInsSwapCount(0);
+        sortMe.mainFlag = false;
+        sortMe.sortFlag = false;
+
+        sortMe.generateRand();
+        randWin.print(sortMe.getAsciiChars(), sortMe.getNumElements(), height, width);
+        randWin.printRandFooter(height-2, SORT_SIZE);
+        pthread_mutex_lock(&sortMe.mainMutex);
+
+        pthread_mutex_lock(&sortMe.contMutex);
+        pthread_cond_broadcast(&sortMe.contCond);
+        pthread_mutex_unlock(&sortMe.contMutex);
+
+        //TODO - implement way of broadcasting signal to cont condVar
+
+        //if(FLAG){
+        //Mutex for continuing
+        //Conditional Variable for continuing
+        //Flag for continuing
+        //}
+
+
 
     }
 

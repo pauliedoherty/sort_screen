@@ -15,32 +15,42 @@ AsciiSort::AsciiSort():
     mInsSwapCount = 0;
     mbubComplete = false;
     mSelComplete = false;
-    mainFlag = false;
-    sortFlag = false;
     totalThreads = 3;
     activeThreads = 3;
     mainMutex = PTHREAD_MUTEX_INITIALIZER;
     sortMutex = PTHREAD_MUTEX_INITIALIZER;
     mainCond = PTHREAD_COND_INITIALIZER;
     sortCond = PTHREAD_COND_INITIALIZER;
+    contMutex = PTHREAD_MUTEX_INITIALIZER;
+    contCond = PTHREAD_COND_INITIALIZER;
+    mainFlag = false;
+    sortFlag = false;
+    contFlag = true;
 }
 
 AsciiSort::AsciiSort(int size):
     mSize(size)
 {
-    mAsciiChars = new char[size];
-    mBubChars = new char[size];
-    mSelChars = new char[size];
-    mInsChars = new char[size];
+    mAsciiChars = new char[mSize];
+    mBubChars = new char[mSize];
+    mSelChars = new char[mSize];
+    mInsChars = new char[mSize];
     mBubSwapCount = 0;
     mSelSwapCount = 0;
     mInsSwapCount = 0;
     mbubComplete = false;
     mSelComplete = false;
+    totalThreads = 3;
+    activeThreads = 3;
+    mainMutex = PTHREAD_MUTEX_INITIALIZER;
+    sortMutex = PTHREAD_MUTEX_INITIALIZER;
+    mainCond = PTHREAD_COND_INITIALIZER;
+    sortCond = PTHREAD_COND_INITIALIZER;
+    contMutex = PTHREAD_MUTEX_INITIALIZER;
+    contCond = PTHREAD_COND_INITIALIZER;
     mainFlag = false;
     sortFlag = false;
-    totalThreads = 3;   //These values will need to be assigned elsewhere
-    activeThreads = 3;      //Make them private
+    contFlag = true;
 }
 
 AsciiSort::~AsciiSort()
@@ -59,6 +69,7 @@ void AsciiSort::generateRand()
         std::uniform_int_distribution<int> dist(33, 126);   /*Upper and lower limits of Ascii chars*/
         mAsciiChars[i] = char(dist(eng));                   /*Allowed                              */
     }
+    mInitCopy();
 }
 
 
@@ -82,10 +93,16 @@ void AsciiSort::insertionSort()
 
 void AsciiSort::runAllSorts()
 {
-    mInitCopy();
     mInitBubbleSort();
     mInitSelectionSort();
     mInitInsertionSort();
+}
+
+void AsciiSort::contSorts()
+{
+    mContBubSort();
+    mContSelSort();
+    mContInsSort();
 }
 
 void AsciiSort::waitForBubSort() const
@@ -203,6 +220,20 @@ void AsciiSort::mInitInsertionSort()
     pthread_create(&mtIns, NULL, mInsertionSort, this);
 }
 
+void AsciiSort::mContBubSort()
+{
+    mBubbleSort(this);
+}
+
+void AsciiSort::mContSelSort()
+{
+    mSelectionSort(this);
+}
+void AsciiSort::mContInsSort()
+{
+    mInsertionSort(this);
+}
+
 /*Private static member functions that get*
  *executed within their own threads       */
 void* AsciiSort::mBubbleSort(void* This)
@@ -244,7 +275,19 @@ void* AsciiSort::mBubbleSort(void* This)
         pthread_cond_signal(&((AsciiSort*)This)->mainCond);
     //}
     pthread_mutex_unlock(&((AsciiSort*)This)->mainMutex);
-    pthread_exit(NULL);
+
+    pthread_mutex_lock(&((AsciiSort*)This)->contMutex);
+
+    if(!((AsciiSort*)This)->contFlag){  //Check if user has requested to exit program
+        pthread_mutex_unlock(&((AsciiSort*)This)->contMutex);
+        pthread_exit(NULL);
+    }else
+        pthread_cond_wait(&((AsciiSort*)This)->contCond, &((AsciiSort*)This)->contMutex);
+        pthread_mutex_unlock(&((AsciiSort*)This)->contMutex);
+        ((AsciiSort*)This)->mContBubSort(); //Restart the cycle
+
+
+
 }
 
 void* AsciiSort::mSelectionSort(void* This)
@@ -287,7 +330,18 @@ void* AsciiSort::mSelectionSort(void* This)
             pthread_cond_signal(&((AsciiSort*)This)->mainCond);
         //}
     pthread_mutex_unlock(&((AsciiSort*)This)->mainMutex);
-    pthread_exit(NULL);
+    //pthread_exit(NULL);
+
+    pthread_mutex_lock(&((AsciiSort*)This)->contMutex);
+
+    if(!((AsciiSort*)This)->contFlag){  //Check if user has requested to exit program
+        pthread_mutex_unlock(&((AsciiSort*)This)->contMutex);
+        pthread_exit(NULL);
+    }else
+        pthread_cond_wait(&((AsciiSort*)This)->contCond, &((AsciiSort*)This)->contMutex);
+        pthread_mutex_unlock(&((AsciiSort*)This)->contMutex);
+        ((AsciiSort*)This)->mContSelSort(); //Restart the cycle
+
 }
 
 void* AsciiSort::mInsertionSort(void* This)
@@ -326,5 +380,16 @@ void* AsciiSort::mInsertionSort(void* This)
         pthread_cond_signal(&((AsciiSort*)This)->mainCond);
     //}
     pthread_mutex_unlock(&((AsciiSort*)This)->mainMutex);
-    pthread_exit(NULL);
+    //pthread_exit(NULL);
+
+    pthread_mutex_lock(&((AsciiSort*)This)->contMutex);
+
+    if(!((AsciiSort*)This)->contFlag){  //Check if user has requested to exit program
+        pthread_mutex_unlock(&((AsciiSort*)This)->contMutex);
+        pthread_exit(NULL);
+    }else
+        pthread_cond_wait(&((AsciiSort*)This)->contCond, &((AsciiSort*)This)->contMutex);
+        pthread_mutex_unlock(&((AsciiSort*)This)->contMutex);
+        ((AsciiSort*)This)->mContInsSort(); //Restart the cycle
+
 }

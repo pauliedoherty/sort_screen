@@ -14,6 +14,7 @@ public:
     void selectionSort();           //runs SelectionSort on its own thread
     void insertionSort();           //runs InsertionSort on its own thread
     void runAllSorts();             //runs all 3 sorting algorithms
+    void contSorts();
     void waitForBubSort() const;    //Wait for Bubble sort thread to finish
     void waitForSelSort() const;    //Wait for Selection sort thread to finish
     void waitForInsSort() const;    //Wait for Insertion sort thread to finish
@@ -37,8 +38,11 @@ public:
     pthread_cond_t sortCond;         //Conditional variable bubble
     pthread_mutex_t mainMutex;       //Mutex to handle bubble sort
     pthread_cond_t mainCond;         //Conditional variable bubble
+    pthread_mutex_t contMutex;       //Mutex for locking continue cond var
+    pthread_cond_t contCond;         //Conditional variable to hold thread while waiting for restart
     bool mainFlag;
     bool sortFlag;
+    bool contFlag;
     int activeThreads;
     int totalThreads;
 
@@ -59,6 +63,9 @@ protected:
     void mInitBubbleSort();          //runs BubbleSort on its own thread
     void mInitSelectionSort();       //runs SelectionSort on its own thread
     void mInitInsertionSort();       //runs InsertionSort on its own thread
+    void mContBubSort();
+    void mContSelSort();
+    void mContInsSort();
     pthread_t mtBub;                 //Thread to run BubbleSort Algorithm
     pthread_t mtSel;                 //Thread to run SelectionSort Alg
     pthread_t mtIns;                 //Thread to run InsertionSort Alg
