@@ -13,10 +13,14 @@ After sorting is completed, the parent control loop, which the above functionali
 The Display class is used to access the Ncurses library which is utilsed for the animation.
 
 Using GCC the app can be compiled and linked on Linux using the following commands:
-    g++ -c asciisort.h asciisort.cpp display.h display.cpp main.cpp
-    g++ -o sort_screen asciisort.o display.o main.o -lncurses -lpthread
-    chmod a+x sort_screen
-    ./sort_screen
+
+g++ -c asciisort.h asciisort.cpp display.h display.cpp main.cpp
+
+g++ -o sort_screen asciisort.o display.o main.o -lncurses -lpthread
+
+chmod a+x sort_screen
+
+./sort_screen
 
 Known Bug:
 App locks if user enters key during startup animation 
