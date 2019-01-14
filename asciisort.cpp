@@ -3,8 +3,8 @@
 #include <iostream>
 
 AsciiSort::AsciiSort()
-    : mSize((int)NUM_CHARS), mBubSwapCount(0), mSelSwapCount(0),
-      mInsSwapCount(0), activeSorts(3), activeSwaps(3)
+    : mSize((int)DEFAULT_NUM_CHARS), mMinChar(DEFAULT_MIN), mMaxChar(DEFAULT_MAX),
+      mBubSwapCount(0), mSelSwapCount(0), mInsSwapCount(0)
 {
     mAsciiChars = new char[mSize];
     mBubChars = new char[mSize];
@@ -22,9 +22,9 @@ AsciiSort::AsciiSort()
     contCond = PTHREAD_COND_INITIALIZER;
 }
 
-AsciiSort::AsciiSort(int size)
-    : mSize((int)NUM_CHARS), mBubSwapCount(0), mSelSwapCount(0),
-      mInsSwapCount(0), activeSorts(3), activeSwaps(3)
+AsciiSort::AsciiSort(int size, int minChar, int maxChar)
+    : mSize((int)size), mMinChar(minChar), mMaxChar(maxChar),
+      mBubSwapCount(0), mSelSwapCount(0), mInsSwapCount(0)
 {
     mAsciiChars = new char[mSize];
     mBubChars = new char[mSize];
@@ -55,7 +55,7 @@ void AsciiSort::generateRand()
 {
     std::mt19937 eng(static_cast<unsigned long>(time(nullptr)));  //Marsenne Twister Engine Seed
     for(int i=0; i < mSize; i++){
-        std::uniform_int_distribution<int> dist((int)MIN, (int)MAX);   /*Upper and lower limits of*/
+        std::uniform_int_distribution<int> dist(mMinChar, mMaxChar);   /*Upper and lower limits of*/
         mAsciiChars[i] = char(dist(eng));                              /* Ascii chars allowed     */
     }
     mInitCopy();        //copy random chars into sort arrays
@@ -82,6 +82,8 @@ void AsciiSort::generateRand()
 
 void AsciiSort::initAllSorts()
 {
+    this->activeSorts = 3;
+    this->activeSwaps = 3;
     mInitBubbleSort();
     mInitSelectionSort();
     mInitInsertionSort();
@@ -163,8 +165,7 @@ void AsciiSort::shutdownRoutine()
     this->contFlag = false;                  //flag to not to start another sort iteration
 
     /*set flags and signal to conditional variables where threads may be waiting*/
-    pthread_mutex_lock(&this->mainMutex);    //set flag and signal to main thread
-    this->mainFlag = true;
+    this->mainFlag = true;                      //set flag and signal to main thread
     pthread_cond_signal(&this->mainCond);
     pthread_mutex_unlock(&this->mainMutex);
 

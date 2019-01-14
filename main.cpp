@@ -9,13 +9,74 @@
 #include "asciisort.h"
 #include "display.h"
 
-#define DELAY_TIME 5     //Delay time for display
+
+
+#define DELAY_TIME 5      //Delay time for display !!TODO investigate issues with display.h Glob_var
 #define SORT_SIZE 152     //Number of chars to ge generated and sorted
 
+struct params
+{
+    params(int numChars = DEFAULT_NUM_CHARS, int minChar = DEFAULT_MIN,
+           int maxChar = DEFAULT_MAX, int delay = DELAY_TIME)
+        : _numChars(numChars), _minChar(minChar), _maxChar(maxChar), _delay(delay) {}
+    int _numChars;      //Number of elements in array to be generated and sorted
+    int _minChar;       //minimum ascii char that can be selected
+    int _maxChar;       //maximum ascii char that can be selected
+    int _delay;         //delay time in milliseconds between display updates
+
+    std::string randWinTitle = "Random Ascii List";
+    std::string bubWinTitle = "Bubble Sort";
+    std::string selWinTitle = "Selection Sort";
+    std::string insWinTitle = "Insertion Sort";
+
+};
+
+bool checkInput(int argc, char* argv[]);
+void displayHelp(std::string appName);
 int getKey(WINDOW* localWin);   //Function to input from keyboard
 
-int main()
+
+int main(int argc, char* argv[])
 {
+
+    params params;              //Struct to hold application parameters
+
+    /*Check input arguments if there are any...*/
+    if(argc > 1) { if(!checkInput(argc, argv)) { displayHelp(argv[0]); return 0; } }
+
+    switch (argc){
+        case(1):
+            break;              //Assign default parameters
+        case(2):
+            params._numChars = strtol(argv[1], NULL, 10);         //inputted _charNums by user
+            break;
+        case(3):
+            params._numChars = strtol(argv[1], NULL, 10);
+            params._minChar = strtol(argv[2], NULL, 10);
+            break;
+        case(4):
+            params._numChars = strtol(argv[1], NULL, 10);
+            params._minChar = strtol(argv[2], NULL, 10);
+            params._maxChar = strtol(argv[3], NULL, 10);
+            break;
+        case(5):
+            params._numChars = strtol(argv[1], NULL, 10);
+            params._minChar = strtol(argv[2], NULL, 10);
+            params._maxChar = strtol(argv[3], NULL, 10);
+            params._delay = strtol(argv[4], NULL, 10);
+            break;
+        default:
+            std::cout << "Too many arguments\n";
+            displayHelp(argv[0]);
+            return 0;
+    }
+
+    /*Check user inputs are valid*/
+    if(params._numChars < 2 || params._numChars > 152) { displayHelp(argv[0]); return 0; }
+    if(params._minChar < 33 || params._minChar > 125) { displayHelp(argv[0]); return 0; }
+    if(params._maxChar < 34 || params._maxChar > 126) { displayHelp(argv[0]); return 0; }
+    if(params._delay < 1 || params._delay > 5000) { displayHelp(argv[0]); return 0; }
+
 
     std::cout << "Sort animation starting...\n";
     std::cout << "Press 'Q' to end animation immediately\n";
@@ -23,26 +84,29 @@ int main()
     std::cout << "Press Enter to begin...\n";
     std::cin.get();
 
-    initscr();                     //Start curses mode
-    noecho();                      //stops key entries from being displayed on screen
-    WINDOW *inputWin;              //Window to scan for user input
+    initscr();                                //Start curses mode
+    noecho();                                 //stops key entries from being displayed on screen
+    WINDOW *inputWin;                         //Window to scan for user input
     inputWin = newwin(1, 1, LINES+1, COLS+1); /*initialise window and set it outside*/
                                               /*of the visible area of the screen   */
-    cbreak();                      //turn off line buffering
-    keypad(inputWin, TRUE);        //Turn on keypad mode
-    nodelay(inputWin, TRUE);       //getch() call will not wait for user entry
-    int startx, starty, width, height;  //Window parameters
-    height = LINES/2;              //LINES is number of console rows after initscr() is called
-    width = COLS/2;                //COLS is number of console characters in a line
-    starty = 0;                    //Define where to position window on console
-    startx = 0;                    //Top left corner
+    cbreak();                                 //turn off line buffering
+    keypad(inputWin, TRUE);                   //Turn on keypad mode
+    nodelay(inputWin, TRUE);                  //getch() call will not wait for user entry
+    int startx, starty, width, height;        //Window parameters
+    height = LINES/2;                         //LINES = number of console display rows
+    width = COLS/2;                           //COLS = number of console display chars/row
+    starty = 0;                               //Define where to position window on console
+    startx = 0;                               //Top left corner
 
-    AsciiSort sortMe(SORT_SIZE);   //Object to generate Random chars and control sorting
-    /*TODO - Put strings into structs OR config file*/
-    Display randWin(height, width, starty, startx, "Random Ascii List", DELAY_TIME);
-    Display bubWin(height, width, starty, startx+width, "Bubble Sort", DELAY_TIME);
-    Display selWin(height, width, starty+height, startx, "Selection Sort", DELAY_TIME);
-    Display insWin(height, width, starty+height, startx+width, "Insertion Sort", DELAY_TIME);
+
+    /* Create bject to generate Random chars and control sorting */
+    AsciiSort sortMe(params._numChars, params._minChar, params._maxChar);
+
+    /* Create display windows to show sorting progress           */
+    Display randWin(height, width, starty, startx, params.randWinTitle, params._delay);
+    Display bubWin(height, width, starty, startx+width, params.bubWinTitle, params._delay);
+    Display selWin(height, width, starty+height, startx, params.selWinTitle, params._delay);
+    Display insWin(height, width, starty+height, startx+width, params.insWinTitle, params._delay);
 
     sortMe.generateRand();          //Generate random array of ascii chars
 
@@ -63,7 +127,7 @@ int main()
 
         while(sortMe.activeSorts > 0 && !sortMe.exitFlag){
 
-            switch(getKey(inputWin)){   //Check for user input and terminate program if so
+            switch(getKey(inputWin)){           //Check for user input and terminate program if so
                 case 0: break;                  //no input detected - do nothing
                 case 1:                         //Escape key detected - begin shutdown
                     sortMe.shutdownRoutine();
@@ -152,8 +216,42 @@ int main()
     pthread_mutex_destroy(&sortMe.contMutex);
     pthread_cond_destroy(&sortMe.contCond);
 
+    echo();
+    nocbreak();
     endwin();                           //ends curses mode
     return 0;                           //end program
+}
+
+bool checkInput(int argc, char* argv[])
+{
+    char* p;                    //pointer for string to long function
+    int temp;                   //hold argv[i] value for testing
+    bool output = true;         //temporarily hold output
+    if(argc > 5) {
+        std::cout << "Too many input arguments...\n";
+        return false; }
+    for(int i=1; i<argc; i++){
+        temp = strtol(argv[i], &p, 10);
+        if(*p != '\0') { output = false; }
+    }
+    return output;
+}
+
+void displayHelp(std::string appName)
+{
+    std::cout << appName << " accepts 4 input parameter:\n";
+    std::cout << "1. Number of chars to generate\n";
+    std::cout << "   Type: <int> Restriction: 2 <= Int <= 152\n";
+    std::cout << "   Default Value: 152\n";
+    std::cout << "2. Minimum ascii value to generate\n";
+    std::cout << "   Type: <int> Restriction: 33 <= Int <= 151\n";
+    std::cout << "   Default Value: 33\n";
+    std::cout << "3. Maximum ascii value to generate\n";
+    std::cout << "   Type: <int> Restriction: 34 <= Int <= 126\n";
+    std::cout << "   Default Value: 126\n";
+    std::cout << "4. Delay time between display updates during sort cycles\n";
+    std::cout << "   Type: <int> Restriction: 1 <= Int <= 5000 (milliseconds)\n";
+    std::cout << "   Default Value: 5 (milliseconds)\n";
 }
 
 int getKey(WINDOW* localWin)            /*Checks window for keyboard input*/
