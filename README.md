@@ -29,14 +29,10 @@ chmod a+x sort_screen
 
 ./sort_screen
 
-Known Bug:
-App locks if user enters key during startup animation 
 
 Updates required:
 1. Add input parameters:
-    -Control update speed
-    -Let user specify range of ascii chars to sort
-    -Let user specify how many characters to sort (Max 152)
+    -Help Screen
 2. Add colour to characters already sorted so progress is easily tracked
 
 
