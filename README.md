@@ -1,4 +1,9 @@
 # sort_screen
+Updates:
+    1. Bug fix - Key entries are now accepted during display initialisation without causing app to freeze
+    2. update - Input parameters are now accepted to control Amount of chars generated, min & max ascii value generated and display delay time.                  
+
+App Description:
 This repository holds a console app that displays ascii characters being sorted by the basic algorithms - Bubble Sort, Selection Sort and Insertion Sort.
 
 The aim is to display a coherent animation of randommly generated ascii characters being sorted in real time.
