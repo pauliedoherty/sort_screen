@@ -9,10 +9,7 @@
 #include "asciisort.h"
 #include "display.h"
 
-
-
 #define DELAY_TIME 5      //Delay time for display !!TODO investigate issues with display.h Glob_var
-#define SORT_SIZE 152     //Number of chars to ge generated and sorted
 
 struct params
 {
@@ -31,10 +28,9 @@ struct params
 
 };
 
-bool checkInput(int argc, char* argv[]);
-void displayHelp(std::string appName);
-int getKey(WINDOW* localWin);   //Function to input from keyboard
-
+bool checkInput(int argc, char* argv[]);    //Check if user parameters are valid
+void displayHelp(std::string appName);      //Displays input parameter info to users
+int getKey(WINDOW* localWin);               //Function to read input from keyboard
 
 int main(int argc, char* argv[])
 {
@@ -112,7 +108,7 @@ int main(int argc, char* argv[])
 
     /*Output random generated chars to sort windows*/
     randWin.printInit(sortMe.getAsciiChars(), sortMe.getNumElements(), height, width);
-    randWin.printRandFooter(height-2, SORT_SIZE);
+    randWin.printRandFooter(height-2, params._numChars);
     bubWin.printInit(sortMe.getBubChars(), sortMe.getNumElements(), height, width);
     bubWin.printSortFooter(height-2, sortMe.getBubSwapCount());
     selWin.printInit(sortMe.getSelChars(), sortMe.getNumElements(), height, width);
@@ -183,7 +179,7 @@ int main(int argc, char* argv[])
 
         sortMe.generateRand();
         randWin.printInit(sortMe.getAsciiChars(), sortMe.getNumElements(), height, width);
-        randWin.printRandFooter(height-2, SORT_SIZE);
+        randWin.printRandFooter(height-2, params._numChars);
         bubWin.printInit(sortMe.getBubChars(), sortMe.getNumElements(), height, width);
         bubWin.printSortFooter(height-2, sortMe.getBubSwapCount());
         selWin.printInit(sortMe.getSelChars(), sortMe.getNumElements(), height, width);
