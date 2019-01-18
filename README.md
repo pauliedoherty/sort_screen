@@ -6,6 +6,11 @@ This repository holds a console app that displays ascii characters being sorted 
 The aim is to display a coherent animation of randommly generated ascii characters being sorted in real time.
 A count of the number of swaps each algorithm has completed is displayed along with the current sort state.
 
+The below image shows a screenshot of the app in action
+
+![alt text](https://github.com/pauliedoherty/sort_screen/blob/master/img/sort_screen.png)
+
+
 The app uses the posix multithreading library to control each time a swap will be completed so that it can coordinate with the main thread, which is updating the display.
 
 The AsciiSort class produces the randommly array and contains the individual Sort methods which are executed on their own individual threads. Public conditional variables and mutexes also belonging to the AsciiSort class and are used to ensure that the main function will wait until all threads have completed a swap before updating the display. The same conditional variables are then used to broadcast to the sorting threads that they can proceed with another swap cycle.
